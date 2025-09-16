@@ -1,0 +1,29 @@
+# ☁️ OCI Functions Repository
+
+Este repositorio reúne todas las **funciones serverless** desarrolladas y desplegadas en **Oracle Cloud Infrastructure (OCI)** para cubrir los distintos requerimientos internos de la empresa.  
+El objetivo es centralizar, documentar y versionar el código de cada función, facilitando la colaboración y el mantenimiento.
+
+---
+
+## 📂 Estructura del repositorio
+
+Cada carpeta corresponde a un requerimiento o caso de uso específico.  
+La convención de nombres es:
+
+Dentro de cada carpeta se incluyen:
+- `func.py` → Código fuente principal de la función.  
+- `func.yaml` → Definición y metadatos de despliegue.  
+- `requirements.txt` → Dependencias de Python.  
+- `Dockerfile` → Imagen personalizada (si aplica).  
+- `README.md` → Documentación específica de la función.
+
+---
+
+## ⚙️ Requerimientos
+
+- [OCI CLI](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm) instalado y configurado.
+- [Fn Project CLI](https://fnproject.io/) para empaquetar funciones.
+- Docker (en caso de usar imágenes custom).
+- Acceso al tenancy de OCI y permisos adecuados en el compartimento correspondiente.
+
+---
