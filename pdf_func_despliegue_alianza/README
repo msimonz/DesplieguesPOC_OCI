@@ -1,0 +1,23 @@
+#CREACIÓN DE IMAGEN Y DESPLIEGUE A OCIR
+docker rmi -f pdf_func:0.0.2
+docker rmi -f iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.2
+docker build --platform linux/amd64 -t pdf_func:0.0.2 .
+docker tag pdf_func:0.0.2 iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.2
+docker push iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.2
+
+#SE DEBE CREAR LA FUNCIÓN EN OCI A PARTIR DE LA IMAGEN QUE SE ENVIÓ
+#COMANDO DE INVOCACIÓN DE LA FUNCIÓN POR CONSOLA
+ DEBUG=1 echo -n '{                                             
+  "Ciudad": "Bogotá",
+  "Referencia": "Contrato 123",
+  "NIT": "900123456",
+  "Plan": "Plan Pensional XYZ",
+  "Representante": "Juan Pérez",
+  "Clientes": [
+    {"cedula":"12345678","nombre":"Carlos Gómez","encargo":"Empleado"},
+    {"cedula":"87654321","nombre":"María Rodríguez","encargo":"Miembro"}
+  ]
+}' | fn invoke pdf_function_app pdf_func
+
+#DECODIFICACIÓN DEL PDF EN BASE64 A PDF PARA VER EL RESULTADO.
+echo "TU_CADENA_BASE64_AQUI" | base64 -d > salida.pdf
