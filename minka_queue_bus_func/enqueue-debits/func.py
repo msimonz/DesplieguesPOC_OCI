@@ -5,9 +5,10 @@ import oci
 QUEUE_OCID = os.getenv("QUEUE_OCID")  # OCID de la Queue
 CHANNEL_HEADER = os.getenv("CHANNEL_HEADER", "x-queue-channel")
 
-def handler(ctx, data: bytes = None):
+def handler(ctx, data: io.BytesIO = None):
     try:
-        body = {} if not data else json.loads(data.decode("utf-8"))
+        raw_body = data.getvalue() if data else b"{}"
+        body = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
         return (400, f"Invalid JSON: {e}")
 
