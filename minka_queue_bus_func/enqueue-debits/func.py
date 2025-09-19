@@ -30,6 +30,7 @@ def handler(ctx, data: io.BytesIO = None):
         signer = oci.auth.signers.get_resource_principals_signer()
         queue_client = oci.queue.QueueClient(config={}, signer=signer)
 
+        print(channel)
         enriched_body = {
             "payload": body,
             "channel": channel
@@ -39,10 +40,11 @@ def handler(ctx, data: io.BytesIO = None):
             messages=[
                 oci.queue.models.PutMessagesDetailsEntry(
                     content=json.dumps(enriched_body),
-                    channel=channel
+                    metadata={"channelId": channel}   # 👈 aquí va el canal
                 )
             ]
         )
+
 
         resp = queue_client.put_messages(
             queue_id=QUEUE_OCID,
