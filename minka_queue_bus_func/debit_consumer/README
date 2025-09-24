@@ -1,9 +1,10 @@
+######FUNCTIÓN CONSUMIDORA########
 #CREACIÓN DE IMAGEN Y DESPLIEGUE A OCIR
-docker rmi -f enqueue_func:0.0.1
-docker rmi -f iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.1
-docker build --platform linux/amd64 -t enqueue_func:0.0.1 .
-docker tag enqueue_func:0.0.1 iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.1
-docker push iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.1
+docker rmi -f debit_consumer:0.0.3
+docker rmi -f iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.3
+docker build --platform linux/amd64 -t debit_consumer:0.0.3 .
+docker tag debit_consumer:0.0.3 iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.3
+docker push iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.3
 
 #ES IMPORTANTE DESCARGAR PRIMERO FN Y CONFIGURARLO PARA PODER HACER PRUEBAS
   #INSTALACIÓN DE FN
@@ -31,4 +32,4 @@ docker push iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.1
 
 #SE DEBE CREAR LA FUNCIÓN EN OCI A PARTIR DE LA IMAGEN QUE SE ENVIÓ
 #COMANDO DE INVOCACIÓN DE LA FUNCIÓN POR CONSOLA
-echo -n '{"msg":"prueba sin queue"}' | fn invoke pdf_function_app enqueue_func
+echo -n '{"msg":"prueba sin queue"}' | fn invoke pdf_function_app debit_consumer
