@@ -1,40 +1,64 @@
-import io, json
+import io
+import json
+import os
+import requests
+import logging
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
+
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 def handler(ctx, data: io.BytesIO = None):
     try:
         raw_body = data.getvalue() if data else b"{}"
         event = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
+        logger.error(f"Invalid JSON: {e}")
         return (400, json.dumps({"error": f"Invalid JSON: {e}"}))
 
     results = []
-
-    # Si es lista, toma el primer elemento (o itera todos)
-    if isinstance(event, list):
-        events = event
-    else:
-        events = [event]
+    events = event if isinstance(event, list) else [event]
 
     for ev in events:
-        for msg in ev.get("messages", []):
-            content = msg.get("content") or "{}"
-            metadata = msg.get("metadata", {})
-            channel = metadata.get("channelId", "unknown")
+        payload = ev.get("payload", {})
+        channel = ev.get("channel", "unknown")
 
-            try:
-                payload = json.loads(content)
-            except Exception:
-                payload = {"raw_content": content}
+        logger.info("=== Evento recibido ===")
+        logger.info(f"Channel: {channel}")
+        logger.info(f"Payload completo: {json.dumps(payload)[:500]}")
 
-            print("=== Mensaje recibido ===")
-            print(f"Channel: {channel}")
-            print(f"Payload: {payload}")
+        try:
+            if channel == "Completed":
+                r = requests.put(
+                    WEBHOOK_URL,
+                    json=payload,                     # 👈 Aquí mandamos TODO el objeto
+                    headers={"Channel": channel},     # 👈 Header extra
+                    timeout=10
+                )
+                status = r.status_code
+                logger.info(f"POST enviado a {WEBHOOK_URL}, status={status}")
+            else:
+                r = requests.post(
+                    WEBHOOK_URL,
+                    json=payload,                     # 👈 Aquí mandamos TODO el objeto
+                    headers={"Channel": channel},     # 👈 Header extra
+                    timeout=10
+                )
+                status = r.status_code
+                logger.info(f"POST enviado a {WEBHOOK_URL}, status={status}")
+        except Exception as e:
+            status = f"error: {str(e)}"
+            logger.error(f"Error enviando a webhook: {status}")
 
-            results.append({
-                "status": "ok",
-                "channel": channel,
-                "id": msg.get("id"),
-                "payload": payload
-            })
+        results.append({
+            "channel": channel,
+            "status": status
+        })
 
-    return (200, json.dumps({"processed": results}))
+    summary = {"processed": results}
+    logger.info(f"Resumen final: {summary}")
+    return (200, json.dumps(summary, ensure_ascii=False),
+            {"Content-Type": "application/json"})
