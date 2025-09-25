@@ -7,39 +7,34 @@ def handler(ctx, data: io.BytesIO = None):
     except Exception as e:
         return (400, json.dumps({"error": f"Invalid JSON: {e}"}))
 
-    # Service Connector Hub manda los mensajes en este formato
-    records = event.get("messages", [])
     results = []
 
-    for msg in records:
-        content = msg.get("content")
-        metadata = msg.get("metadata", {})
-        channel = metadata.get("channelId", "unknown")
+    # Si es lista, toma el primer elemento (o itera todos)
+    if isinstance(event, list):
+        events = event
+    else:
+        events = [event]
 
-        # Decodifica el mensaje publicado por la función encoladora
-        try:
-            payload = json.loads(content)
-        except:
-            payload = content
+    for ev in events:
+        for msg in ev.get("messages", []):
+            content = msg.get("content") or "{}"
+            metadata = msg.get("metadata", {})
+            channel = metadata.get("channelId", "unknown")
 
-        print(f"=== Mensaje recibido ===")
-        print(f"Channel: {channel}")
-        print(f"Payload: {payload}")
+            try:
+                payload = json.loads(content)
+            except Exception:
+                payload = {"raw_content": content}
 
-        # Aquí defines la lógica según el canal
-        if channel == "Prepared":
-            # TODO: lógica de prepared
-            results.append({"status": "ok", "channel": channel, "id": msg.get("id")})
-        elif channel == "Aborted":
-            # TODO: lógica de aborted
-            results.append({"status": "ok", "channel": channel, "id": msg.get("id")})
-        elif channel == "Committed":
-            # TODO: lógica de committed
-            results.append({"status": "ok", "channel": channel, "id": msg.get("id")})
-        elif channel == "Completed":
-            # TODO: lógica de completed
-            results.append({"status": "ok", "channel": channel, "id": msg.get("id")})
-        else:
-            results.append({"status": "ignored", "channel": channel})
+            print("=== Mensaje recibido ===")
+            print(f"Channel: {channel}")
+            print(f"Payload: {payload}")
+
+            results.append({
+                "status": "ok",
+                "channel": channel,
+                "id": msg.get("id"),
+                "payload": payload
+            })
 
     return (200, json.dumps({"processed": results}))
