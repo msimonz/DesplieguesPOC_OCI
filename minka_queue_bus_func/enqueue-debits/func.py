@@ -1,126 +1,143 @@
-import io
-import json
-import os
-import requests
-import logging
+import io, json, os
 import oci
+from fdk import response
 
-# === CONFIGURACIÓN GENERAL ===
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 QUEUE_OCID = os.getenv("QUEUE_OCID")
-MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
-
-# Configurar logging
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger()
-
 
 def _get_header(headers: dict, name: str):
-    """Obtiene un header sin importar mayúsculas/minúsculas"""
     if not headers:
         return None
     lower = {k.lower(): v for k, v in headers.items()}
     return lower.get(name.lower())
 
-
-def _send_back_to_queue(payload, channel):
-    """
-    Reenvía el mensaje a la Queue para reintento.
-    Usa config.oci para autenticación (no Resource Principals).
-    """
+def _extract_path_params(ctx):
     try:
-        # 1️⃣ Cargar configuración local de OCI (config.oci)
-        file_config = oci.config.from_file("config.oci")
+        req_url = ctx.RequestURL()  # URL completa de la invocación
+        # Ejemplo: https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/abc123/debito-abortar
+        parts = req_url.split("/")
 
-        # 2️⃣ Obtener endpoint de mensajes de la Queue
-        admin = oci.queue.QueueAdminClient(config=file_config)
-        q = admin.get_queue(QUEUE_OCID).data
-        messages_endpoint = q.messages_endpoint
-
-        # 3️⃣ Crear QueueClient apuntando al endpoint
-        queue_client = oci.queue.QueueClient(config=file_config)
-        queue_client.base_client.endpoint = messages_endpoint
-
-        # 4️⃣ Construir mensaje con metadata
-        enriched_body = {"payload": payload, "channel": channel}
-        put_details = oci.queue.models.PutMessagesDetails(
-            messages=[
-                oci.queue.models.PutMessagesDetailsEntry(
-                    content=json.dumps(enriched_body),
-                    metadata={"channelId": str(channel)}
-                )
-            ]
-        )
-
-        # 5️⃣ Enviar mensaje a la Queue
-        resp = queue_client.put_messages(queue_id=QUEUE_OCID, put_messages_details=put_details)
-        logger.info(f"Mensaje reenviado a Queue (reintento #{payload.get('retry_count', 0)}). "
-                    f"opc-request-id={resp.headers.get('opc-request-id')}")
-        return True
-
+        # buscamos si contiene 'debito-preparar', 'debito-abortar', 'debito-confirmar' o 'debito-completar'
+        if "debito-preparar" in parts:
+            return "preparar"
+        elif "debito-abortar" in parts:
+            params = parts[-2] if len(parts) > 1 else None
+        elif "debito-confirmar" in parts:
+            params = parts[-2] if len(parts) > 1 else None
+        elif "debito-completar" in parts:
+            params = parts[-2] if len(parts) > 1 else None
+        return params
     except Exception as e:
-        logger.error(f"Error reenviando a la Queue: {e}")
-        return False
-
+        print(f"Error extrayendo parámetros de URL: {e}")
+        return {}
 
 def handler(ctx, data: io.BytesIO = None):
     try:
         raw_body = data.getvalue() if data else b"{}"
-        event = json.loads(raw_body.decode("utf-8"))
+        body = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
-        logger.error(f"Invalid JSON: {e}")
-        return (400, json.dumps({"error": f"Invalid JSON: {e}"}))
+        return response.Response(
+            ctx,
+            response_data=json.dumps({"code": 400, "message": f"JSON inválido: {e}"}),
+            status_code=400,
+            headers={"Content-Type": "application/json"}
+        )
 
-    results = []
-    events = event if isinstance(event, list) else [event]
+    try:
+        headers = ctx.Headers() if hasattr(ctx, "Headers") else {}
+        print("=== Headers recibidos ===")
+        print(headers)
 
-    for ev in events:
-        payload = ev.get("payload", {})
-        channel = ev.get("channel", "unknown")
-        retry_count = payload.get("retry_count", 0)
+        # Extraer parámetros de la URL
+        path_params = _extract_path_params(ctx)
+        print("=== Parámetros extraídos de la URL ===")
+        print(path_params)
 
-        logger.info("=== Evento recibido ===")
-        logger.info(f"Channel: {channel}")
-        logger.info(f"Payload completo: {json.dumps(payload)[:500]}")
+        # Obtener canal desde header o body
+        channel = _get_header(headers, "x-queue-channel") or body.get("channel")
+        if not channel:
+            return response.Response(
+                ctx,
+                response_data=json.dumps({
+                    "code": 400,
+                    "message": "Falta el parámetro 'channel' (header x-queue-channel o body.channel)"
+                }),
+                status_code=400,
+                headers={"Content-Type": "application/json"}
+            )
 
-        try:
-            headers = {"Channel": channel, "Retry-Count": str(retry_count)}
+        if not QUEUE_OCID:
+            return response.Response(
+                ctx,
+                response_data=json.dumps({
+                    "code": 500,
+                    "message": "QUEUE_OCID no configurado en variables de entorno"
+                }),
+                status_code=500,
+                headers={"Content-Type": "application/json"}
+            )
 
-            if channel == "Completed":
-                r = requests.put(WEBHOOK_URL, json=payload, headers=headers, timeout=10)
-            else:
-                r = requests.post(WEBHOOK_URL, json=payload, headers=headers, timeout=10)
+        # 1️⃣ Cargar credenciales OCI
+        file_config = oci.config.from_file("config.oci")
 
-            status = r.status_code
-            logger.info(f"Webhook enviado a {WEBHOOK_URL}, status={status}")
+        # 2️⃣ Obtener endpoint de la Queue
+        admin = oci.queue.QueueAdminClient(config=file_config)
+        q = admin.get_queue(QUEUE_OCID).data
+        messages_endpoint = q.messages_endpoint
 
-            # Si falla (>=400), generar reintento
-            if status >= 400:
-                raise Exception(f"HTTP {status}")
+        # 3️⃣ Crear cliente de mensajes
+        queue_client = oci.queue.QueueClient(config=file_config)
+        queue_client.base_client.endpoint = messages_endpoint
+        enriched_body = {}
+        if path_params == "preparar":
+            enriched_body = {
+                "payload": body,
+                "channel": channel,
+            }
+        else:
+            enriched_body = {
+                "payload": body,
+                "pathParams": path_params,
+                "channel": channel
+            }
+        # 4️⃣ Construir el mensaje
+        put_details = oci.queue.models.PutMessagesDetails(
+            messages=[
+                oci.queue.models.PutMessagesDetailsEntry(
+                    content=json.dumps(enriched_body),
+                    metadata={
+                        "channelId": str(channel),
+                        "pathParams": json.dumps(path_params)
+                    }
+                )
+            ]
+        )
+        # 5️⃣ Enviar mensaje a la Queue
+        resp = queue_client.put_messages(
+            queue_id=QUEUE_OCID,
+            put_messages_details=put_details
+        )
+    
+        result = oci.util.to_dict(resp.data)
+        print(f"put_messages opc-request-id={resp.headers.get('opc-request-id')}")
 
-        except Exception as e:
-            retry_count += 1
-            payload["retry_count"] = retry_count
-            logger.error(f"Error enviando a webhook: {str(e)}. Reintento #{retry_count}")
+        return response.Response(
+            ctx,
+            response_data=json.dumps({
+                "code": 202,
+                "message": "Mensaje encolado correctamente",
+            }),
+            status_code=202,
+            headers={"Content-Type": "application/json"}
+        )
 
-            if retry_count <= MAX_RETRIES:
-                ok = _send_back_to_queue(payload, channel)
-                if ok:
-                    status = f"requeued (retry #{retry_count})"
-                else:
-                    status = f"failed to requeue (retry #{retry_count})"
-            else:
-                status = f"max retries exceeded ({MAX_RETRIES})"
-
-        results.append({
-            "channel": channel,
-            "status": status,
-            "retry_count": retry_count
-        })
-
-    summary = {"processed": results}
-    logger.info(f"Resumen final: {summary}")
-
-    return (200, json.dumps(summary, ensure_ascii=False),
-            {"Content-Type": "application/json"})
+    except Exception as e:
+        print(f"Error en ejecución: {e}")
+        return response.Response(
+            ctx,
+            response_data=json.dumps({
+                "code": 500,
+                "message": f"Error al enviar mensaje. Detalle: {str(e)}"
+            }),
+            status_code=500,
+            headers={"Content-Type": "application/json"}
+        )

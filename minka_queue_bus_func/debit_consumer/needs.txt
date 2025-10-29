@@ -1,0 +1,14 @@
+osb_endpoint: https://pruelan.servicios.alianza.com.co:9983/dev/api_alianza/minka/notificaciones/V1.0
+pomelo-api-secret: hByKl5U+zzpMibm7MiEnjEsnBHC4ntATnEhjzKRw2fw=
+osb_password: Basic YXBpZ2F0ZXdheTpRMjZDTk05QVI3eSRYVHpRcVg=
+
+https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/debito-preparar 
+https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/{handle}/debito-abortar 
+https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/{intentHandle}/debito-confirmar 
+https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/{intentHandle}/debito-completar
+
+curl --location 'https://idcs-7f4cda73fb984257905d231c0dac0f4b.identity.oraclecloud.com/oauth2/v1/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'Authorization: Basic NmNlMzkxZTRkNmI3NDk1M2E5ZWQ2M2I4NTY0ZDcwNmQ6N2I4YWZmNTYtN2VmZi00OWExLThhNGEtODIwNWZkMmYzODA3' \
+--data-urlencode 'scope=eo5cy3ugnp3vvn2qp74h3cyebq.apigateway.us-ashburn-1.oci.customer-oci.com/user-scope' \
+--data-urlencode 'grant_type=client_credentials'

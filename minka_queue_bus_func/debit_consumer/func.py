@@ -7,10 +7,11 @@ import oci
 import time
 
 # === CONFIGURACIÓN GENERAL ===
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+OSB_BASE_URL = os.getenv("OSB_BASE_URL")  
+OSB_AUTH = os.getenv("OSB_AUTH")          
 QUEUE_OCID = os.getenv("QUEUE_OCID")
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
-VISIBILITY_DELAY = int(os.getenv("VISIBILITY_DELAY", "120"))  # segundos
+VISIBILITY_DELAY = int(os.getenv("VISIBILITY_DELAY", "120")) 
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO,
@@ -19,20 +20,15 @@ logger = logging.getLogger()
 
 
 def _get_header(headers: dict, name: str):
-    """Obtiene un header sin importar mayúsculas/minúsculas"""
     if not headers:
         return None
     lower = {k.lower(): v for k, v in headers.items()}
     return lower.get(name.lower())
 
 
-def _send_back_to_queue(payload, channel):
-    """
-    Reenvía el mensaje a la Queue para reintento usando la API REST firmada.
-    Aplica un visibilityInSeconds real antes de que el mensaje vuelva a ser visible.
-    """
+def _send_back_to_queue(payload, channel, path_params):
+    """Reenvía el mensaje a la Queue OCI con retraso de visibilidad."""
     try:
-        # 1️⃣ Cargar configuración de OCI y crear signer
         file_config = oci.config.from_file("config.oci")
         signer = oci.signer.Signer(
             tenancy=file_config["tenancy"],
@@ -41,19 +37,17 @@ def _send_back_to_queue(payload, channel):
             private_key_file_location=file_config["key_file"]
         )
 
-        # 2️⃣ Obtener endpoint de la Queue
         admin = oci.queue.QueueAdminClient(config=file_config)
         q = admin.get_queue(QUEUE_OCID).data
         messages_endpoint = q.messages_endpoint
 
-        # 3️⃣ Construir mensaje con visibilidad retrasada
-        enriched_body = {"payload": payload, "channel": channel}
+        enriched_body = {"payload": payload, "pathParams": path_params, "channel": channel}
         message_data = {
             "messages": [
                 {
                     "content": json.dumps(enriched_body),
                     "metadata": {"channelId": str(channel)},
-                    "visibilityInSeconds": VISIBILITY_DELAY  # 👈 parámetro correcto
+                    "deliveryDelayInSeconds": VISIBILITY_DELAY
                 }
             ]
         }
@@ -61,25 +55,34 @@ def _send_back_to_queue(payload, channel):
         url = f"{messages_endpoint}/20210201/queues/{QUEUE_OCID}/messages"
         headers = {"Content-Type": "application/json"}
 
-        # 4️⃣ Enviar mensaje firmado a la cola
         response = requests.post(url, data=json.dumps(message_data),
                                  headers=headers, auth=signer)
 
         if response.status_code == 200:
-            logger.info(
-                f"Mensaje reenviado a Queue (reintento #{payload.get('retry_count', 0)}, "
-                f"visibility={VISIBILITY_DELAY}s)"
-            )
+            logger.info(f"Mensaje reenviado a Queue (retry={payload.get('retry_count', 0)}, delay={VISIBILITY_DELAY}s)")
             return True
         else:
-            logger.error(
-                f"Error reenviando mensaje (HTTP {response.status_code}): {response.text}"
-            )
+            logger.error(f"Error reenviando mensaje (HTTP {response.status_code}): {response.text}")
             return False
 
     except Exception as e:
         logger.error(f"Error reenviando a la Queue: {e}")
         return False
+
+
+def _build_osb_endpoint(channel, path_params):
+    if not OSB_BASE_URL:
+        raise ValueError("OSB_BASE_URL no configurado en variables de entorno.")
+    if channel == "Prepared":
+        return f"{OSB_BASE_URL}/crear"
+    elif channel == "Aborted":
+        return f"{OSB_BASE_URL}/{str(path_params)}/abortar"
+    elif channel == "Committed":
+        return f"{OSB_BASE_URL}/{str(path_params)}/confirmar"
+    elif channel == "Completed":
+        return f"{OSB_BASE_URL}/{str(path_params)}/completar"
+    # fallback genérico
+    return OSB_BASE_URL
 
 
 def handler(ctx, data: io.BytesIO = None):
@@ -96,22 +99,35 @@ def handler(ctx, data: io.BytesIO = None):
     for ev in events:
         payload = ev.get("payload", {})
         channel = ev.get("channel", "unknown")
+        # Si el pathParams viene dentro de payload (estructura anidada)
+        path_params = ev.get("pathParams") or ev.get("payload", {}).get("pathParams", "")
         retry_count = payload.get("retry_count", 0)
-
+        logger.info(f"EVENTO: {json.dumps(ev)}")
         logger.info("=== Evento recibido ===")
         logger.info(f"Channel: {channel}")
-        logger.info(f"Payload completo: {json.dumps(payload)[:500]}")
+        logger.info(f"PathParams: {json.dumps(path_params)}")
+        logger.info(f"Payload: {json.dumps(payload)[:500]}")
 
         try:
-            headers = {"Channel": channel, "Retry-Count": str(retry_count)}
+            osb_endpoint = _build_osb_endpoint(channel, path_params)
+            logger.info(f"Endpoint OSB seleccionado: {osb_endpoint}")
 
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": OSB_AUTH,
+                "Channel": channel,
+                "Retry-Count": str(retry_count)
+            }
+            status = None
             if channel == "Completed":
-                r = requests.put(WEBHOOK_URL, json=payload, headers=headers, timeout=10)
+                response = requests.put(osb_endpoint, json=payload, headers=headers, timeout=15, verify=True)
+                status = response.status_code
             else:
-                r = requests.post(WEBHOOK_URL, json=payload, headers=headers, timeout=10)
+                response = requests.post(osb_endpoint, json=payload, headers=headers, timeout=15, verify=True)
+                status = response.status_code
 
-            status = r.status_code
-            logger.info(f"Webhook enviado a {WEBHOOK_URL}, status={status}")
+            logger.info(f"Solicitud enviada a OSB: {osb_endpoint}, status={status}")
+            logger.info(f"Respuesta OSB: {response.text[:500]}")
 
             if status >= 400:
                 raise Exception(f"HTTP {status}")
@@ -119,17 +135,11 @@ def handler(ctx, data: io.BytesIO = None):
         except Exception as e:
             retry_count += 1
             payload["retry_count"] = retry_count
-            logger.error(f"Error enviando a webhook: {str(e)}. Reintento #{retry_count}")
+            logger.error(f"Error enviando a OSB: {str(e)}. Reintento #{retry_count}")
 
             if retry_count <= MAX_RETRIES:
-                # Esperar un poco antes de reencolar (opcional)
-                #logger.info(f"Esperando {VISIBILITY_DELAY}s antes de reencolar mensaje...")
-                #time.sleep(VISIBILITY_DELAY)
-                ok = _send_back_to_queue(payload, channel)
-                if ok:
-                    status = f"requeued (retry #{retry_count})"
-                else:
-                    status = f"failed to requeue (retry #{retry_count})"
+                ok = _send_back_to_queue(payload, channel, path_params)
+                status = f"requeued (retry #{retry_count})" if ok else f"failed to requeue (retry #{retry_count})"
             else:
                 status = f"max retries exceeded ({MAX_RETRIES})"
 
