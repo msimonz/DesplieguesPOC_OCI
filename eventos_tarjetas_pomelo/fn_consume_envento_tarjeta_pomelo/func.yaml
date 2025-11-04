@@ -1,6 +1,6 @@
 schema_version: 20180708
-name: fn_consume_retry_envento_tarjeta_pomelo
-version: 0.0.1
+name: fn_consume_evento_tarjeta_pomelo
+version: 0.0.6
 runtime: python3.9
 build_image: fnproject/python:3.9-dev
 run_image: fnproject/python:3.9

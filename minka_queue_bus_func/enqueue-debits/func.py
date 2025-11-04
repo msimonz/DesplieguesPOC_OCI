@@ -16,15 +16,14 @@ def _extract_path_params(ctx):
         # Ejemplo: https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/abc123/debito-abortar
         parts = req_url.split("/")
 
-        # buscamos si contiene 'debito-preparar', 'debito-abortar', 'debito-confirmar' o 'debito-completar'
-        if "debito-preparar" in parts:
+        if "abort" in parts:
+            params = parts[-2] if len(parts) > 1 else None
+        elif "commit" in parts:
+            params = parts[-2] if len(parts) > 1 else None
+        elif "completed" in parts:
+            params = parts[-2] if len(parts) > 1 else None
+        else:
             return "preparar"
-        elif "debito-abortar" in parts:
-            params = parts[-2] if len(parts) > 1 else None
-        elif "debito-confirmar" in parts:
-            params = parts[-2] if len(parts) > 1 else None
-        elif "debito-completar" in parts:
-            params = parts[-2] if len(parts) > 1 else None
         return params
     except Exception as e:
         print(f"Error extrayendo parámetros de URL: {e}")

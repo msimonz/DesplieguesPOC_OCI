@@ -33,7 +33,7 @@ def check_signature(api_secret, endpoint, timestamp, body, received_signature):
 timestamp = "1730505600"
 endpoint = "/pomelo/eventosTarjeta/V1.0"
 body = '{\"event_id\": \"event_id2\", \"id\": \"crd-2xotdFOZi4krMztOWReg83HJDat\",\"updated_at\": \"2025-06-10T14:15:31.186Z\",\"user_id\":\"usr-2xotd8DAN3T21wKLkZoltJUkCyw\",\"event\": \"BLOCK\",\"card_type\": \"VIRTUAL\",\"related_card_id\":\"crd-2xotdFOZi4krMztOWReg83HJDau\",\"idempotency_key\": \"idempotency_key2\"}'
-api_secret = "c2VjcmV0LWNsYXZlLXBvbWVsbw=="
+api_secret = "hByKl5U+zzpMibm7MiEnjEsnBHC4ntATnEhjzKRw2fw= "
 message = (timestamp + endpoint + body).encode("utf-8")
 secret = get_api_secret(api_secret)
 print("Secret:", secret)
