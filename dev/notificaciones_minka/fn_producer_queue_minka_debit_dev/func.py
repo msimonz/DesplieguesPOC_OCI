@@ -1,8 +1,13 @@
 import io, json, os
 import oci
+import logging
 from fdk import response
 
 QUEUE_OCID = os.getenv("QUEUE_OCID")
+
+# === CONFIGURACIÓN DE LOGGING ===
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger()
 
 def _get_header(headers: dict, name: str):
     if not headers:
@@ -13,20 +18,19 @@ def _get_header(headers: dict, name: str):
 def _extract_path_params(ctx):
     try:
         req_url = ctx.RequestURL()  # URL completa de la invocación
-        # Ejemplo: https://dev-api.alianza.com.co/api/transacciones/rest/b2b/fiducia/minka/V1.0/abc123/debito-abortar
         parts = req_url.split("/")
 
         if "abort" in parts:
             params = parts[-2] if len(parts) > 1 else None
         elif "commit" in parts:
             params = parts[-2] if len(parts) > 1 else None
-        elif "completed" in parts:
-            params = parts[-2] if len(parts) > 1 else None
+        elif "intents" in parts:
+            params = parts[-1] if len(parts) > 1 else None
         else:
-            return "preparar"
+            return "prepared"
         return params
     except Exception as e:
-        print(f"Error extrayendo parámetros de URL: {e}")
+        logger.error(f"Error extrayendo parámetros de URL: {e}")
         return {}
 
 def handler(ctx, data: io.BytesIO = None):
@@ -42,14 +46,15 @@ def handler(ctx, data: io.BytesIO = None):
         )
 
     try:
+      
         headers = ctx.Headers() if hasattr(ctx, "Headers") else {}
-        print("=== Headers recibidos ===")
-        print(headers)
+        logger.info(f"[fn_producer_queue_minka_debit] Headers recibidos: {headers}")
 
         # Extraer parámetros de la URL
         path_params = _extract_path_params(ctx)
-        print("=== Parámetros extraídos de la URL ===")
-        print(path_params)
+        logger.info(f"[fn_producer_queue_minka_debit] Parámetros extraídos de la URL: {path_params}")
+
+        logger.info(f"[fn_producer_queue_minka_debit] body: {body}")
 
         # Obtener canal desde header o body
         channel = _get_header(headers, "x-queue-channel") or body.get("channel")
@@ -64,6 +69,19 @@ def handler(ctx, data: io.BytesIO = None):
                 headers={"Content-Type": "application/json"}
             )
 
+        if channel == "Completed":
+            status = (body.get("data", {}).get("intent", {}).get("meta", {}).get("status"))
+            if status != "completed":
+                return response.Response(
+                    ctx,
+                    response_data=json.dumps({
+                        "code": 200,
+                        "message": f"Mensaje recibido exitosamente estado: {status}"
+                    }),
+                    status_code=200,
+                    headers={"Content-Type": "application/json"}
+                )
+
         if not QUEUE_OCID:
             return response.Response(
                 ctx,
@@ -75,19 +93,19 @@ def handler(ctx, data: io.BytesIO = None):
                 headers={"Content-Type": "application/json"}
             )
 
-        # 1️⃣ Cargar credenciales OCI
+        # Cargar credenciales OCI
         file_config = oci.config.from_file("config.oci")
 
-        # 2️⃣ Obtener endpoint de la Queue
+        # Obtener endpoint de la Queue
         admin = oci.queue.QueueAdminClient(config=file_config)
         q = admin.get_queue(QUEUE_OCID).data
         messages_endpoint = q.messages_endpoint
 
-        # 3️⃣ Crear cliente de mensajes
+        # Crear cliente de mensajes
         queue_client = oci.queue.QueueClient(config=file_config)
         queue_client.base_client.endpoint = messages_endpoint
         enriched_body = {}
-        if path_params == "preparar":
+        if path_params == "prepared":
             enriched_body = {
                 "payload": body,
                 "channel": channel,
@@ -98,7 +116,7 @@ def handler(ctx, data: io.BytesIO = None):
                 "pathParams": path_params,
                 "channel": channel
             }
-        # 4️⃣ Construir el mensaje
+        # Construir el mensaje
         put_details = oci.queue.models.PutMessagesDetails(
             messages=[
                 oci.queue.models.PutMessagesDetailsEntry(
@@ -110,27 +128,32 @@ def handler(ctx, data: io.BytesIO = None):
                 )
             ]
         )
-        # 5️⃣ Enviar mensaje a la Queue
+        # Enviar mensaje a la Queue
         resp = queue_client.put_messages(
             queue_id=QUEUE_OCID,
             put_messages_details=put_details
         )
     
         result = oci.util.to_dict(resp.data)
-        print(f"put_messages opc-request-id={resp.headers.get('opc-request-id')}")
+        logger.info(f"[fn_producer_queue_minka_debit] put_messages in channel={channel}, result={result}")
+
+        if channel == "Completed":
+            statusHttp = "200"
+        else:
+            statusHttp = "202"
 
         return response.Response(
             ctx,
             response_data=json.dumps({
-                "code": 202,
+                "code": statusHttp,
                 "message": "Mensaje encolado correctamente",
             }),
-            status_code=202,
+            status_code=statusHttp,
             headers={"Content-Type": "application/json"}
         )
 
     except Exception as e:
-        print(f"Error en ejecución: {e}")
+        logger.error(f"Producer Error en ejecución: {e}")
         return response.Response(
             ctx,
             response_data=json.dumps({

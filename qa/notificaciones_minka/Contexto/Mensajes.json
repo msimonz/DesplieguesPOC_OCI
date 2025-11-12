@@ -1,0 +1,115 @@
+{
+  "data": {
+    "luid": "$ben.-0fPkDAdwmZthVUiQ",
+    "amount": 100,
+    "handle": "deb_01u9RGCevt4rEkRMV",
+    "inputs": [
+      0
+    ],
+    "intent": {
+      "data": {
+        "access": [
+          {
+            "action": "any",
+            "signer": {
+              "public": "gef6OID0o7ZFGTXutV62mh+zv5kgkFP3QLiR+N7syck="
+            }
+          }
+        ],
+        "claims": [
+          {
+            "action": "transfer",
+            "amount": 100,
+            "source": {
+              "custom": {
+                "name": "Estrada Romero Hermanos",
+                "entityType": "business",
+                "documentType": "txid",
+                "documentNumber": "78755322097"
+              },
+              "handle": "svgs:85621797@alianza.com.co"
+            },
+            "symbol": {
+              "handle": "cop"
+            },
+            "target": {
+              "custom": {
+                "name": "María Elvira Ochoa Ponce",
+                "accountRef": "wLafqLMJ1h7ZhQJxoV4KZrAbbRmLQ3Sj8v",
+                "entityType": "individual",
+                "documentType": "cc",
+                "documentNumber": "4446821703"
+              },
+              "handle": "svgs:55441187@bancoverde.co"
+            }
+          }
+        ],
+        "custom": {
+          "description": "Pago de servicios",
+          "routingCode": "TFY"
+        },
+        "handle": "20250602122456789TFY782423196249812",
+        "schema": "b2p-send"
+      },
+      "hash": "96fcf594c896a1dee9a2be60edf497e09e43c1cc084decd13baf21e7359a306f",
+      "luid": "$int.-0fPkDz0ARVaDeQ8B",
+      "meta": {
+        "moment": "2025-07-15T09:35:08.249Z",
+        "owners": [
+          "gef6OID0o7ZFGTXutV62mh+zv5kgkFP3QLiR+N7syck="
+        ],
+        "proofs": [
+          {
+            "custom": {
+              "moment": "2025-07-15T09:35:07.926Z",
+              "status": "created"
+            },
+            "digest": "92f0516e6f76528f4aecdf841db9f87549e36667b75961db780fb61de7f18b70",
+            "method": "ed25519-v2",
+            "public": "gef6OID0o7ZFGTXutV62mh+zv5kgkFP3QLiR+N7syck=",
+            "result": "eNFvtZnBTKLV/+BNjyFGPGffG3bxoC/4gpfHo1hQX+u8T+BCm2E1Q3cEAxKQ0EB5DkML+kMzDXIFDl6NyFCsCg=="
+          }
+        ],
+        "status": "pending",
+        "thread": "-0fPkDjRDnuWG9jeb"
+      }
+    },
+    "schema": "debit",
+    "source": {
+      "custom": {
+        "name": "Estrada Romero Hermanos",
+        "entityType": "business",
+        "documentType": "txid",
+        "documentNumber": "78755322097"
+      },
+      "handle": "svgs:85621797@alianza.com.co"
+    },
+    "symbol": {
+      "handle": "cop"
+    },
+    "target": {
+      "custom": {
+        "name": "María Elvira Ochoa Ponce",
+        "accountRef": "wLafqLMJ1h7ZhQJxoV4KZrAbbRmLQ3Sj8v",
+        "entityType": "individual",
+        "documentType": "cc",
+        "documentNumber": "4446821703"
+      },
+      "handle": "svgs:55441187@bancoverde.co"
+    }
+  },
+  "hash": "62144cc07fc45d7011cf9aa8366c55ab44b9d12e79d9effe5b36405418774b3c",
+  "meta": {
+    "proofs": [
+      {
+        "custom": {
+          "moment": "2025-07-15T09:35:08.413Z"
+        },
+        "digest": "3cd9dcc09405460a8b684c4fbe2b59844c7396e08dee641c32ad4b98ebdb20f4",
+        "method": "ed25519-v2",
+        "public": "pDZBu71VYrxEf6jmYIoTLu99BIuit4Zx57lsxsA1hOo=",
+        "result": "HBJl3jpUZV37H9GmvqbV+Wsh8wlF5jehFqUBA9KJcfrhy+9blMgEZSfCXKnwUaPxcglaKi9IoxpBxfMfsJRMAQ=="
+      }
+    ]
+  }
+}

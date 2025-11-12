@@ -1,0 +1,5 @@
+Este directorio contiente tanto la función encoladora como la funtión consumidora para el manejo de 
+eventos de tarjetas pomelo en una cola de Oracle Cloud Infrastructure (OCI) utilizando Oracle Functions y OCI Queue.
+
+Adicionalmente, contiene una funcion que recibe notificaciones de eventos de tarjetas pomelo y
+verifica que vengan firmados para enviarlos al OSB

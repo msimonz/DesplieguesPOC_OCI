@@ -1,0 +1,30 @@
+Eventos tarjetas pomelo - Tenant de Alianza - RL5521
+Reintentos ->cola
+Bus es productor de los reintento
+APIGW solo es el puente para encolar.
+Nueva funciónnalidad Eventos tarjeta
+
+Pomelo ->LB -> APIGW ->FN-> OSB ->{Reintentos}LB PRIV -> APIGW->FN->QUEUE->Conn->FN->OSB
+
+Pomelo envia un mensaje firmado
+FN Notif-> Revisa la firma y si está firmado, lo envia al bus, si no devuelve error.
+FN Cons-> Solamente recibe de la cola y envía al bus, no tiene que revisar que ya esté firmado porque si llegó a la cola es porque estaba firmado. Llegar a un web book para no complicarnos hasta que no esté desarrollada la funcionnalidad en el OSB
+
+Deployment de excepciones para APIGW Externo
+APIGW Interno en deployment transacciones se incluyen las rutas
+
+notificacion/eventos/tarjeta
+
+fn init --runtime python3.9 fn_consume_retry_envento_tarjeta_pomelo
+fn init --runtime python3.9 fn_enqueue_retry_evento_tarjeta_pomelo
+fn init --runtime python3.9 fn_notif_evento_tarjeta_pomelo
+
+Valores mock para verificación de firma en fn_notif_evento_tarjeta_pomelo
+api_secret: c2VjcmV0LWNsYXZlLXBvbWVsbw==
+x-endpoint: /pomelo/eventosTarjeta/V1.0
+x-timestamp: 1730505600
+x-signature: hmac-sha256 +ZIK7H/FhJiQQsaHdZzuwA45nD2giEycmJ7OeOnqOuk=
+x-api-key: mock-api-key-12345
+
+JSON_MOCK:
+{"idempotency_key":"ca163729-b83b-4c18-a4af-f43e32afa72a","datetime":"2024-11-01T06:15:24.407631Z","type":"ACTIVITY_CREATED","version":"1","activity":{"account":{"country":"COL","currency":"COP","id":"acc-2oDvazj0746TU9GDpkKtUw1GKEP"},"created_at":"2024-11-01T06:15:25.407631Z","data":{"description":{"es-CO":"Test 1"},"metadata":{},"properties":{"point_type":"ECOMMERCE","address":"CIUDAD DE COL","card_brand":"MASTERCARD","entry_mode":"MANUAL","merchant_name":"AMAZON COL","merchant_id":"7979112","card_type":"CREDIT","mcc":"4816","last_digits":"4109"}},"entry_type":"DEBIT","forced":"false","origin":"PAYMENT_PROCESSOR","origin_tx_id":"ctx-2mXXXXXXXXXX7766","process_type":"ORIGINAL","result":"APPROVED","total_amount":140000,"type":"CARD_PURCHASE"}}

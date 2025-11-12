@@ -1,0 +1,2 @@
+Este directorio contiente tanto la función encoladora como la funtión consumidora para el manejo de 
+débitos en una cola de Oracle Cloud Infrastructure (OCI) utilizando Oracle Functions y OCI Queue.

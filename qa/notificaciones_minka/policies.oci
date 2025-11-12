@@ -1,0 +1,3 @@
+allow any-user to use fn-function in compartment <COMPARTMENT_OCID> where all {request.principal.type='serviceconnector', request.principal.compartment.id='<COMPARTMENT_OCID>'}
+allow any-user to use fn-invocation in compartment id <COMPARTMENT_OCID> where all {request.principal.type= 'serviceconnector', request.principal.compartment.id='<COMPARTMENT_OCID>'}
+Allow any-user to { QUEUE_READ , QUEUE_CONSUME } in compartment id <COMPARTMENT_OCID> where all {request.principal.type='serviceconnector', target.queue.id='<QUEUE_OCID>', request.principal.compartment.id='<COMPARTMENT_OCID>'}

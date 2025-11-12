@@ -59,14 +59,14 @@ def _send_back_to_queue(payload, channel, path_params):
                                  headers=headers, auth=signer)
 
         if response.status_code == 200:
-            logger.info(f"Mensaje reenviado a Queue (retry={payload.get('retry_count', 0)}, delay={VISIBILITY_DELAY}s)")
+            logger.info(f"[fn_consumer_queue_minka_debit] Mensaje reenviado a Queue (retry={payload.get('retry_count', 0)}, delay={VISIBILITY_DELAY}s)")
             return True
         else:
-            logger.error(f"Error reenviando mensaje (HTTP {response.status_code}): {response.text}")
+            logger.error(f"[fn_consumer_queue_minka_debit] Error reenviando mensaje (HTTP {response.status_code}): {response.text}")
             return False
 
     except Exception as e:
-        logger.error(f"Error reenviando a la Queue: {e}")
+        logger.error(f"[fn_consumer_queue_minka_debit] Error reenviando a la Queue: {e}")
         return False
 
 
@@ -90,7 +90,7 @@ def handler(ctx, data: io.BytesIO = None):
         raw_body = data.getvalue() if data else b"{}"
         event = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
-        logger.error(f"Invalid JSON: {e}")
+        logger.error(f"[fn_consumer_queue_minka_debit] Invalid JSON: {e}")
         return (400, json.dumps({"error": f"Invalid JSON: {e}"}))
 
     results = []
@@ -102,15 +102,14 @@ def handler(ctx, data: io.BytesIO = None):
         # Si el pathParams viene dentro de payload (estructura anidada)
         path_params = ev.get("pathParams") or ev.get("payload", {}).get("pathParams", "")
         retry_count = payload.get("retry_count", 0)
-        logger.info(f"EVENTO: {json.dumps(ev)}")
-        logger.info("=== Evento recibido ===")
-        logger.info(f"Channel: {channel}")
-        logger.info(f"PathParams: {json.dumps(path_params)}")
-        logger.info(f"Payload: {json.dumps(payload)[:500]}")
+        logger.info(f"[fn_consumer_queue_minka_debit] EVENTO: {json.dumps(ev)}")
+        logger.info(f"[fn_consumer_queue_minka_debit] Channel: {channel}")
+        logger.info(f"[fn_consumer_queue_minka_debit] PathParams: {json.dumps(path_params)}")
+        logger.info(f"[fn_consumer_queue_minka_debit] Payload: {json.dumps(payload)[:500]}")
 
         try:
             osb_endpoint = _build_osb_endpoint(channel, path_params)
-            logger.info(f"Endpoint OSB seleccionado: {osb_endpoint}")
+            logger.info(f"[fn_consumer_queue_minka_debit] Endpoint OSB seleccionado: {osb_endpoint}")
 
             headers = {
                 "Content-Type": "application/json",
@@ -126,8 +125,8 @@ def handler(ctx, data: io.BytesIO = None):
                 response = requests.post(osb_endpoint, json=payload, headers=headers, timeout=15, verify=True)
                 status = response.status_code
 
-            logger.info(f"Solicitud enviada a OSB: {osb_endpoint}, status={status}")
-            logger.info(f"Respuesta OSB: {response.text[:500]}")
+            logger.info(f"[fn_consumer_queue_minka_debit] Solicitud enviada a OSB: {osb_endpoint}, status={status}")
+            logger.info(f"[fn_consumer_queue_minka_debit] Respuesta OSB: {response.text[:500]}")
 
             if status >= 400:
                 raise Exception(f"HTTP {status}")
@@ -135,7 +134,7 @@ def handler(ctx, data: io.BytesIO = None):
         except Exception as e:
             retry_count += 1
             payload["retry_count"] = retry_count
-            logger.error(f"Error enviando a OSB: {str(e)}. Reintento #{retry_count}")
+            logger.error(f"[fn_consumer_queue_minka_debit] Error enviando a OSB: {str(e)}. Reintento #{retry_count}")
 
             if retry_count <= MAX_RETRIES:
                 ok = _send_back_to_queue(payload, channel, path_params)
@@ -150,7 +149,7 @@ def handler(ctx, data: io.BytesIO = None):
         })
 
     summary = {"processed": results}
-    logger.info(f"Resumen final: {summary}")
+    logger.info(f"[fn_consumer_queue_minka_debit] Resumen final: {summary}")
 
     return (200, json.dumps(summary, ensure_ascii=False),
             {"Content-Type": "application/json"})

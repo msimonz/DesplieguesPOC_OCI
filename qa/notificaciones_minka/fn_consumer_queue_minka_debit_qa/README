@@ -1,0 +1,35 @@
+######FUNCTIÓN CONSUMIDORA########
+#CREACIÓN DE IMAGEN Y DESPLIEGUE A OCIR
+docker rmi -f debit_consumer:0.0.3
+docker rmi -f iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.3
+docker build --platform linux/amd64 -t debit_consumer:0.0.3 .
+docker tag debit_consumer:0.0.3 iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.3
+docker push iad.ocir.io/idfwtyl1vwzp/msimonzrepo:0.0.3
+
+#ES IMPORTANTE DESCARGAR PRIMERO FN Y CONFIGURARLO PARA PODER HACER PRUEBAS
+  #INSTALACIÓN DE FN
+  brew install fn
+  #VERIFICAR INSTALACIÓN
+  fn --version
+  #CONFIGURACIÓN DE FN
+  fn create context oci --provider oracle
+  fn use context oci
+  fn update context oracle.compartment-id ocid1.compartment.oc1..aaaaaaaapdudan5fvxq7bej6p4dhzj2caeok77z7ilixdaaqvjch4pgdceea
+  fn update context oracle.tenancy-id ocid1.tenancy.oc1..aaaaaaaajlatu2r3d4i7aqxkas2ezvq4kc7tobr3pj7kgktl36w73enzexeq
+  fn update context api-url https://functions.us-ashburn-1.oraclecloud.com
+  fn update context registry iad.ocir.io/idfwtyl1vwzp/msimonzrepo
+
+#SE OBTUVO EL COMPARTMENT OCID INSTALANDO OCI CLI
+  #INSTALACIÓN DE OCI CLI
+  brew install oci-cli
+  #VERIFICAR INSTALACIÓN
+  oci --version
+  #CONFIGURACIÓN DE OCI CLI
+  oci setup config
+  #El apikey queda guardado en el directorio ~/.oci/config, se debe subir la llave pública a los apikeys te tu usuario de OCI
+  #Se obtiene el compartment OCID con el comando
+  oci iam compartment list --compartment-id-in-subtree true --all --output table
+
+#SE DEBE CREAR LA FUNCIÓN EN OCI A PARTIR DE LA IMAGEN QUE SE ENVIÓ
+#COMANDO DE INVOCACIÓN DE LA FUNCIÓN POR CONSOLA
+echo -n '{"msg":"prueba sin queue"}' | fn invoke pdf_function_app debit_consumer
