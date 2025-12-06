@@ -1,0 +1,178 @@
+Obtener el contexto del tenance 
+	- oci os ns get
+		ID: idrnj3lclmnb
+Loguearse en docker
+	- docker login -u 'idrnj3lclmnb/jsalcedo.ext@alianza.com.co' iad.ocir.io
+Deploy Functions: Usar Red Ephimeral
+
+0. Limpiar todo docker
+		- docker system prune -a
+		
+1. Escoger compartimiento trasnversal (Networking)
+	Compartimiento: cpmt_trasnversal_alianza
+		SubCompartimiento: Networking
+		Network information
+			VCN: vcn_apigw_alianza
+			Subnets: snet_apigw_private
+	
+Deploy Functions en ambientes
+	
+	Informacion compartimientos
+		DEV:	ocid1.compartment.oc1..aaaaaaaa5ehlu2fsurm44ug7c7yrzwv5onltdcvihlawb33pjcqdber4scaq
+		QA:		ocid1.compartment.oc1..aaaaaaaaupvnfutdkfn5dswjnzfkd4gvjeld7ai6rdir5d3rivzzassgmo2q
+		PREP:	ocid1.compartment.oc1..aaaaaaaaq6rkbxj4aqr6yey7lewfurn7hxlnk6mvqox37ejthkdc4qwtg2va
+		PROD:	ocid1.compartment.oc1..aaaaaaaazh3xdn2py5dwaxyukeli4aqwewgpu7chqt73d4677qsxl4xxe2fq
+	
+	Informacion de repositorios:
+		DEV
+			Pomelo:	repo_notificaciones_pomelo_dev
+			Pomelo: repo_notificaciones_actividades_pomelo_dev
+			Payzen: repo_pagos_payzen_dev
+			CRM:	repo_upload_customer_data_sugarcrm_dev
+		QA
+			Pomelo:	repo_notificaciones_pomelo_qa
+			Payzen: repo_pagos_payzen_qa
+			CRM:	repo_upload_customer_data_sugarcrm_qa
+		PREP
+			Pomelo:	repo_notificaciones_pomelo_prep
+			Payzen: repo_pagos_payzen_prep
+			CRM:	repo_upload_customer_data_sugarcrm_prep
+		PROD
+			Pomelo:	repo_notificaciones_pomelo
+			Payzen: repo_pagos_payzen
+	
+	Informacion de aplicaciones
+		DEV:
+			app_fn_alianza_apigw_dev
+		QA:
+			app_fn_alianza_apigw_qa
+		PREP:
+			app_fn_alianza_apigw_prep
+		PROD:
+			app_fn_alianza_apigw
+		
+	1. Listar contexto actual 
+		fn list context
+		
+	2. Update the context de fucntion
+		DEV:
+			fn update context oracle.compartment-id ocid1.compartment.oc1..aaaaaaaa5ehlu2fsurm44ug7c7yrzwv5onltdcvihlawb33pjcqdber4scaq
+		QA: 
+			fn update context oracle.compartment-id ocid1.compartment.oc1..aaaaaaaaupvnfutdkfn5dswjnzfkd4gvjeld7ai6rdir5d3rivzzassgmo2q
+		PREP: 
+			fn update context oracle.compartment-id ocid1.compartment.oc1..aaaaaaaaq6rkbxj4aqr6yey7lewfurn7hxlnk6mvqox37ejthkdc4qwtg2va
+			
+	3. Update the context de image 
+		DEV:
+			fn update context oracle.image-compartment-id ocid1.compartment.oc1..aaaaaaaa5ehlu2fsurm44ug7c7yrzwv5onltdcvihlawb33pjcqdber4scaq
+		QA:
+			fn update context oracle.image-compartment-id ocid1.compartment.oc1..aaaaaaaaupvnfutdkfn5dswjnzfkd4gvjeld7ai6rdir5d3rivzzassgmo2q
+		PREP:
+			fn update context oracle.image-compartment-id ocid1.compartment.oc1..aaaaaaaaq6rkbxj4aqr6yey7lewfurn7hxlnk6mvqox37ejthkdc4qwtg2va
+			
+	4. Update the context de Repositorio
+		fn update context registry iad.ocir.io/idrnj3lclmnb/{repoImagen}
+		Ej:
+			DEV:
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_notificaciones_pomelo_dev
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_pagos_payzen_dev
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_upload_customer_data_sugarcrm_dev
+			QA:
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_notificaciones_pomelo_qa
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_pagos_payzen_qa
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_upload_customer_data_sugarcrm_qa
+			PREP:
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_notificaciones_pomelo_prep
+				fn update context registry iad.ocir.io/idrnj3lclmnb/repo_pagos_payzen_prep
+				---fn update context registry iad.ocir.io/idrnj3lclmnb/repo_upload_customer_data_sugarcrm_prep
+		
+	5. Listar apps en compartimientos
+		fn list apps
+	
+	6. Desplegar funcion en aplicacion 
+		fn -v deploy --app {nombreAplicacion} 
+		Ej:
+			DEV: 
+				fn -v deploy --app app_fn_alianza_apigw_dev
+			QA:
+				fn -v deploy --app app_fn_alianza_apigw_qa
+			PREP:
+				fn -v deploy --app app_fn_alianza_apigw_prep
+			PROD:
+				fn -v deploy --app app_fn_alianza_apigw
+				
+			
+	7. Listar funciones en aplicaciones
+		fn list functions nombreAplicacion
+		Ej:
+			DEV: 
+				fn list functions app_fn_alianza_apigw_dev
+			QA:
+				fn list functions app_fn_alianza_apigw_qa
+			PREP:
+				fn list functions app_fn_alianza_apigw_prep
+			PROD:
+				fn list functions app_fn_alianza_apigw
+	
+	8. Inspeccionar imagen 
+		fn inspect function {nameApp} {nameFunction}
+		EJ:
+			DEV:
+				fn inspect function app_fn_pagos_payzen_dev fn_producer_queue_pagos_payzen_dev
+			QA:
+				fn inspect function app_fn_pagos_payzen_qa fn_producer_queue_pagos_payzen_qa
+			PREP:
+				fn inspect function app_fn_notificaciones_pomelo_prep fn_notificaciones_pomelo_prep
+			PROD:
+				fn inspect function app_fn_notificaciones_pomelo_prep fn_notificaciones_pomelo
+			
+				
+	9. Identificadores de funciones en ambientes
+		DEV:
+			fn_consumer_queue_pagos_payzen_dev 
+				ocid1.fnfunc.oc1.iad.aaaaaaaa5ymusr3ax7pmtqswvjn5wpd35rycyvwbb4wa4lqc2nlh43ndpzuq
+			fn_consumer_queue_upload_customer_data_sugarcrm_dev
+				ocid1.fnfunc.oc1.iad.aaaaaaaadczgvsjbw3bjfdtsfethql7dv7czieuyhalvdd4o7gcixkyezica
+			fn_notificaciones_pomelo_dev
+				ocid1.fnfunc.oc1.iad.aaaaaaaakyfd75u6rrdrr6g47cqhkytz5ipn25db5qomalokesn6ydjjewiq
+			fn_notificaciones_actividades_pomelo_dev	
+				ocid1.fnfunc.oc1.iad.aaaaaaaayclaamah3j33pia3szm6kp45t2zndhloie2c2jsa56w4qzi46zvq
+			fn_producer_queue_pagos_payzen_dev
+				ocid1.fnfunc.oc1.iad.aaaaaaaaqjzszqjfnx4yurhwog7iqgqbrcechqwbpb55cd7eqzsmiuv5co7a
+			fn_producer_queue_upload_customer_data_sugarcrm_dev
+				ocid1.fnfunc.oc1.iad.aaaaaaaak4mgojx7kgujsncb32pbcwkw7qjp2n5x4zaghejl4o2om2vgkr2a
+		QA:
+			fn_notificaciones_pomelo_qa
+				ocid1.fnfunc.oc1.iad.aaaaaaaanegaibdtuj4femm2uk36usj3ewcaix2v2rvrajskkyzwwwynffqq
+			fn_notificaciones_actividades_pomelo_qa	
+				ocid1.fnfunc.oc1.iad.aaaaaaaakaryyfeqne3youu2t4k733mgahnw3ldfcwidlqzjnnpx75evtmsa
+			fn_consumer_queue_pagos_payzen_qa
+				ocid1.fnfunc.oc1.iad.aaaaaaaaypsq7xelc34ulc7y2465x5jstshph3d35ihxtq5zchk2h32ariaq
+			fn_producer_queue_pagos_payzen_qa
+				ocid1.fnfunc.oc1.iad.aaaaaaaadzakuu7yx7wq3yazidivdjjizjdw6otcii3w5c4inrqamyfypbda
+			fn_consumer_queue_upload_customer_data_sugarcrm_qa
+				ocid1.fnfunc.oc1.iad.aaaaaaaagn537lxyx6udogh26ht7kswk7r2nxa7253mtlfcqtm6nzzyqnysq
+			fn_producer_queue_upload_customer_data_sugarcrm_qa
+				ocid1.fnfunc.oc1.iad.aaaaaaaakpsjhpvhbsom2dnny47arogx3ehnscx7kkxlxyyuitafstsm6d3a	
+		PREP:
+			fn_notificaciones_pomelo_prep
+				ocid1.fnfunc.oc1.iad.aaaaaaaazxcq2yd2ur3jnc5wiltdjcjmi77ha4o5ui7xr7dwp3fxio4ifntq
+			fn_notificaciones_actividades_pomelo_prep
+				ocid1.fnfunc.oc1.iad.aaaaaaaagm4rg3wgrtuwwfmkstoyt76cruc2jdknxmunawqpvybxqxhxsc2a
+			fn_consumer_queue_pagos_payzen_prep
+				ocid1.fnfunc.oc1.iad.aaaaaaaale4uizhci63n3la2yabwx5nura3uqjykrfndxbcsprmqnsr3h6wa
+			fn_producer_queue_pagos_payzen_prep
+				ocid1.fnfunc.oc1.iad.aaaaaaaadvrfnjngdxpnv2aytn2dzaxpchbijo7d3yuryiznhnraizctdtoa
+					
+OPCIONAL
+	Crear funcion en aplicacion 
+		DEV:
+			fn init --runtime python fn_notificaciones_pomelo_dev
+		QA:
+			fn init --runtime python fn_notificaciones_pomelo_qa
+		PREP:
+			fn init --runtime python fn_notificaciones_pomelo_prep
+			fn init --runtime python fn_consumer_queue_pagos_payzen_prep
+			fn init --runtime python fn_producer_queue_pagos_payzen_prep
+			
+	
