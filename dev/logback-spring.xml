@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty name="nombre" source="spring.application.name"/>
+    <property name="versionArtifact" value="%X{version-artifact}"/>
+
+    <springProfile name="local">
+        <property name="entorno" value="local"/>
+    </springProfile>
+    <springProfile name="develop">
+        <property name="entorno" value="develop"/>
+    </springProfile>
+    <springProfile name="qa">
+        <property name="entorno" value="qa"/>
+    </springProfile>
+
+    <!-- Consola: solo local -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} %highlight(%-5level) %green(${nombre}) ${versionArtifact} %yellow(${entorno}) %magenta([%thread]) %logger{36}.%M %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Archivo: ambientes no-local, sin colores ANSI -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/logs/vi-configuracion-service.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>/logs/vi-configuracion-service.%d{yyyy-MM-dd}.%i.log.zip</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <!-- Sin colores ANSI en archivo -->
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} %-5level ${nombre} ${versionArtifact} ${entorno} [%thread] %logger{36}.%M %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <springProfile name="local">
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!local">
+        <!-- STDOUT también para que kubectl logs funcione -->
+        <root level="INFO">
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="STDOUT"/>
+        </root>
+    </springProfile>
+</configuration>

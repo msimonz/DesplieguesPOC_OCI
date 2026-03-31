@@ -1,0 +1,331 @@
+{
+    "id": "ocid1.apideployment.oc1.iad.amaaaaaayt6gxsqaag2ljht4u7a3ziqnhbk7lskprbhwqqppzkbxzt4g64ea",
+    "gatewayId": "ocid1.apigateway.oc1.iad.amaaaaaayt6gxsqagznd6xpffknv6nlp6ze642j2brfp7wyf5ydiejhq53xa",
+    "displayName": "API_TRANSACCIONES",
+    "compartmentId": "ocid1.compartment.oc1..aaaaaaaamlyxjskpbkvs7wwi425a5vs2gdmrt5nejjvxrurwcx52n7kuy5ja",
+    "pathPrefix": "/api/transacciones",
+    "endpoint": "https://aklplexsyhj6e6oht7lvsq5wja.apigateway.us-ashburn-1.oci.customer-oci.com/api/transacciones",
+    "specification": {
+        "requestPolicies": {
+            "authentication": {
+                "type": "JWT_AUTHENTICATION",
+                "isAnonymousAccessAllowed": false,
+                "tokenHeader": "Authorization",
+                "tokenAuthScheme": "Bearer",
+                "issuers": [
+                    "https://identity.oraclecloud.com/"
+                ],
+                "audiences": [
+                    "p4eka6fge66mipsrn7hnjau2wy.apigateway.us-ashburn-1.oci.customer-oci.com"
+                ],
+                "publicKeys": {
+                    "type": "REMOTE_JWKS",
+                    "uri": "https://idcs-ca0c0da4c24742f18fd69976605a08c3.identity.oraclecloud.com/admin/v1/SigningCert/jwk",
+                    "isSslVerifyDisabled": false,
+                    "maxCacheDurationInHours": 1
+                }
+            },
+            "mutualTls": {
+                "isVerifiedCertificateRequired": false,
+                "allowedSans": []
+            }
+        },
+        "loggingPolicies": {
+            "executionLog": {
+                "logLevel": "INFO"
+            }
+        },
+        "routes": [
+            {
+                "path": "/rest/b2b/recaudos/citibank/v1.0/notificacion/evento",
+                "methods": [
+                    "POST"
+                ],
+                "requestPolicies": {
+                    "authorization": {
+                        "type": "AUTHENTICATION_ONLY"
+                    },
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "Authorization",
+                                    "values": [
+                                        "Basic YXBpZ2F0ZXdheTpRMjZDTk05QVI3eSRYVHpRcVg="
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responsePolicies": {
+                    "headerTransformations": {
+                        "filterHeaders": {
+                            "type": "BLOCK",
+                            "items": [
+                                {
+                                    "name": "Server"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "loggingPolicies": {
+                    "executionLog": {}
+                },
+                "backend": {
+                    "type": "HTTP_BACKEND",
+                    "url": "http://10.255.231.34:8891/ext/api_alianza/citibank/notificaciones/V1.0/recibirNotificaciones",
+                    "connectTimeoutInSeconds": 60.0,
+                    "readTimeoutInSeconds": 30.0,
+                    "sendTimeoutInSeconds": 30.0,
+                    "isSslVerifyDisabled": false
+                }
+            },
+            {
+                "path": "/rest/b2b/consulta/V1.0/rentabilidad-historica",
+                "methods": [
+                    "POST"
+                ],
+                "requestPolicies": {
+                    "authorization": {
+                        "type": "AUTHENTICATION_ONLY"
+                    },
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "Authorization",
+                                    "values": [
+                                        "Basic YXBpZ2F0ZXdheTpRMjZDTk05QVI3eSRYVHpRcVg="
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responsePolicies": {
+                    "headerTransformations": {
+                        "filterHeaders": {
+                            "type": "BLOCK",
+                            "items": [
+                                {
+                                    "name": "Server"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "loggingPolicies": {
+                    "executionLog": {}
+                },
+                "backend": {
+                    "type": "HTTP_BACKEND",
+                    "url": "http://10.255.231.34:8891/api_alianza/sifi/consulta/V1.0/rentabilidadHistorica",
+                    "connectTimeoutInSeconds": 60.0,
+                    "readTimeoutInSeconds": 30.0,
+                    "sendTimeoutInSeconds": 30.0,
+                    "isSslVerifyDisabled": false
+                }
+            },
+            {
+                "path": "/rest/b2b/fiducia/minka/v2/debits",
+                "methods": [
+                    "POST"
+                ],
+                "requestPolicies": {
+                    "authorization": {
+                        "type": "AUTHENTICATION_ONLY"
+                    },
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Prepared"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responsePolicies": {
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Prepared"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "loggingPolicies": {
+                    "executionLog": {}
+                },
+                "backend": {
+                    "type": "ORACLE_FUNCTIONS_BACKEND",
+                    "functionId": "ocid1.fnfunc.oc1.iad.amaaaaaayt6gxsqanv2qxp27xup56754cphtrbhgkrk6dcgynxyzqkhhxexa"
+                }
+            },
+            {
+                "path": "/rest/b2b/fiducia/minka/v2/debits/{handle}/abort",
+                "methods": [
+                    "POST"
+                ],
+                "requestPolicies": {
+                    "authorization": {
+                        "type": "AUTHENTICATION_ONLY"
+                    },
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Aborted"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responsePolicies": {
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Aborted"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "loggingPolicies": {
+                    "executionLog": {}
+                },
+                "backend": {
+                    "type": "ORACLE_FUNCTIONS_BACKEND",
+                    "functionId": "ocid1.fnfunc.oc1.iad.amaaaaaayt6gxsqanv2qxp27xup56754cphtrbhgkrk6dcgynxyzqkhhxexa"
+                }
+            },
+            {
+                "path": "/rest/b2b/fiducia/minka/v2/debits/{intentHandle}/commit",
+                "methods": [
+                    "POST"
+                ],
+                "requestPolicies": {
+                    "authorization": {
+                        "type": "AUTHENTICATION_ONLY"
+                    },
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Committed"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responsePolicies": {
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Committed"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "loggingPolicies": {
+                    "executionLog": {}
+                },
+                "backend": {
+                    "type": "ORACLE_FUNCTIONS_BACKEND",
+                    "functionId": "ocid1.fnfunc.oc1.iad.amaaaaaayt6gxsqanv2qxp27xup56754cphtrbhgkrk6dcgynxyzqkhhxexa"
+                }
+            },
+            {
+                "path": "/rest/b2b/fiducia/minka/v2/intents/{intentHandle}",
+                "methods": [
+                    "PUT"
+                ],
+                "requestPolicies": {
+                    "authorization": {
+                        "type": "AUTHENTICATION_ONLY"
+                    },
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Completed"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "responsePolicies": {
+                    "headerTransformations": {
+                        "setHeaders": {
+                            "items": [
+                                {
+                                    "name": "x-queue-channel",
+                                    "values": [
+                                        "Completed"
+                                    ],
+                                    "ifExists": "OVERWRITE"
+                                }
+                            ]
+                        }
+                    }
+                },
+                "loggingPolicies": {
+                    "executionLog": {}
+                },
+                "backend": {
+                    "type": "ORACLE_FUNCTIONS_BACKEND",
+                    "functionId": "ocid1.fnfunc.oc1.iad.amaaaaaayt6gxsqanv2qxp27xup56754cphtrbhgkrk6dcgynxyzqkhhxexa"
+                }
+            }
+        ]
+    },
+    "timeCreated": "2024-09-03T13:55:22.307Z",
+    "timeUpdated": "2025-12-03T16:56:29.418Z",
+    "lifecycleState": "ACTIVE",
+    "freeformTags": {},
+    "definedTags": {
+        "Oracle-Tags": {
+            "CreatedBy": "default/jsalcedo.ext@alianza.com.co",
+            "CreatedOn": "2024-09-03T13:55:22.235Z"
+        }
+    },
+    "systemTags": {},
+    "locks": []
+}
